@@ -5,6 +5,7 @@ from pathlib import Path
 from MyPsutil import MyPsutil
 from Config import Config
 import json
+from SettingsForm import SettingsForm
 
 
 class MainForm(ttk.Frame):
@@ -63,7 +64,8 @@ class MainForm(ttk.Frame):
             master=buttonbar,
             text='Configurações',
             image='settings-light',
-            compound=LEFT
+            compound=LEFT,
+            command=self.on_settings
         )
         btn.pack(side=LEFT, ipadx=5, ipady=5, padx=0, pady=1)
 
@@ -99,6 +101,12 @@ class MainForm(ttk.Frame):
             self.button_action['text'] = 'Iniciar'
 
         self.start = not self.start
+
+    def on_settings(self):
+        setting_form = ttk.Toplevel(self)
+        setting_form.title("Configurações")
+        setting_form.grab_set()
+        SettingsForm(setting_form)
 
     def read_config(self):
         try:
