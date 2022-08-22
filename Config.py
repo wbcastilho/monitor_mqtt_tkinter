@@ -1,7 +1,7 @@
 class Config:
-    def __init__(self, server="127.0.0.1", port="1883", topic="", process="", topic_service=""):
+    def __init__(self, server="127.0.0.1", port="1883", application_topic="", process="", service_topic=""):
         self.server = server
         self.port = port
-        self.topic = topic
+        self.application_topic = application_topic
         self.process = process
-        self.topic_service = topic_service
+        self.service_topic = service_topic

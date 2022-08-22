@@ -1,7 +1,10 @@
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
+from tkinter import messagebox
 from pathlib import Path
 from MyPsutil import MyPsutil
+from Config import Config
+import json
 
 
 class MainForm(ttk.Frame):
@@ -9,6 +12,11 @@ class MainForm(ttk.Frame):
         super().__init__(*args, **kwargs)
         self.pack(fill=BOTH, expand=YES)
         self.start = False
+        self.server = None
+        self.port = None
+        self.application_topic = None
+        self.process = None
+        self.service_topic = None
         self.process = ttk.StringVar()
         self.afterid = ttk.StringVar()
         self.button_action = None
@@ -22,6 +30,7 @@ class MainForm(ttk.Frame):
         self.create_buttonbar()
         self.create_label_frame()
         self.create_statusbar()
+        self.read_config()
 
     def associate_icons(self):
         image_files = {
@@ -45,7 +54,8 @@ class MainForm(ttk.Frame):
         self.button_action = ttk.Button(
             master=buttonbar, text='Iniciar',
             image='play',
-            compound=LEFT
+            compound=LEFT,
+            command=self.on_action
         )
         self.button_action.pack(side=LEFT, ipadx=5, ipady=5, padx=(1, 0), pady=1)
 
@@ -67,7 +77,7 @@ class MainForm(ttk.Frame):
         label = ttk.Label(frame, text="Processo")
         label.grid(row=0, column=0, padx=1, sticky=ttk.E, pady=10)
 
-        self.combobox_process = ttk.Combobox(frame, width=50, values=self.process_values)
+        self.combobox_process = ttk.Combobox(frame, width=50, textvariable=self.process, values=self.process_values)
         self.combobox_process.grid(row=0, column=1, padx=2, sticky=ttk.W, pady=10)
 
     def create_statusbar(self):
@@ -82,8 +92,29 @@ class MainForm(ttk.Frame):
 
     def on_action(self):
         if not self.start:
-            self.button_action['image'] = 'start'
-        else:
             self.button_action['image'] = 'stop'
+            self.button_action['text'] = 'Parar'
+        else:
+            self.button_action['image'] = 'play'
+            self.button_action['text'] = 'Iniciar'
+
+        self.start = not self.start
+
+    def read_config(self):
+        try:
+            with open('config.json', 'r') as f:
+                data = json.load(f)
+                config = Config(**data)
+                self.server.set(config.server)
+                self.port.set(config.port)
+                self.application_topic.set(config.application_topic)
+                self.process.set(config.process)
+                self.service_topic.set(config.service_topic)
+        except PermissionError:
+            messagebox.showwarning(title="Atenção", message="Sem permissão para abrir o arquivo de configuração.")
+        except FileNotFoundError:
+            messagebox.showwarning(title="Atenção", message="Arquivo de configuração não encontrado.")
+        except Exception:
+            messagebox.showwarning(title="Atenção", message="Falha ao abir arquivo de configuração.")
 
 
