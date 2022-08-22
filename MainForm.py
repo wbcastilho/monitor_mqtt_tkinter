@@ -1,44 +1,53 @@
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from pathlib import Path
-from CollapsingFrame import CollapsingFrame
+from MyPsutil import MyPsutil
 
 
 class MainForm(ttk.Frame):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.pack(fill=BOTH, expand=YES)
+        self.start = False
+        self.process = ttk.StringVar()
+        self.afterid = ttk.StringVar()
+        self.button_action = None
+        self.button_settings = None
+        self.combobox_process = None
+        self.process_values = None
+        self.photoimages = []
 
+        self.associate_icons()
+        self.init_combobox_process()
+        self.create_buttonbar()
+        self.create_label_frame()
+        self.create_statusbar()
+
+    def associate_icons(self):
         image_files = {
             'play': 'icons8-reproduzir-24.png',
             'stop': 'icons8-parar-24.png',
             'settings-light': 'icons8-configuracoes-24.png'
         }
 
-        self.photoimages = []
         imgpath = Path(__file__).parent / 'assets'
         for key, val in image_files.items():
             _path = imgpath / val
             self.photoimages.append(ttk.PhotoImage(name=key, file=_path))
 
-        # buttonbar
+    def init_combobox_process(self):
+        self.process_values = MyPsutil.show_activate_processess()
+
+    def create_buttonbar(self):
         buttonbar = ttk.Frame(self, style='primary.TFrame')
         buttonbar.pack(fill=X, pady=1, side=TOP)
 
-        btn = ttk.Button(
+        self.button_action = ttk.Button(
             master=buttonbar, text='Iniciar',
             image='play',
             compound=LEFT
         )
-        btn.pack(side=LEFT, ipadx=5, ipady=5, padx=(1, 0), pady=1)
-
-        btn = ttk.Button(
-            master=buttonbar,
-            text='Parar',
-            image='stop',
-            compound=LEFT
-        )
-        btn.pack(side=LEFT, ipadx=5, ipady=5, padx=0, pady=1)
+        self.button_action.pack(side=LEFT, ipadx=5, ipady=5, padx=(1, 0), pady=1)
 
         btn = ttk.Button(
             master=buttonbar,
@@ -48,6 +57,7 @@ class MainForm(ttk.Frame):
         )
         btn.pack(side=LEFT, ipadx=5, ipady=5, padx=0, pady=1)
 
+    def create_label_frame(self):
         label_frame = ttk.Labelframe(self, text='Monitoração Processo')
         label_frame.pack(fill="x", padx=10, pady=20)
 
@@ -57,17 +67,23 @@ class MainForm(ttk.Frame):
         label = ttk.Label(frame, text="Processo")
         label.grid(row=0, column=0, padx=1, sticky=ttk.E, pady=10)
 
-        self.combobox_process = ttk.Combobox(frame, width=50)
+        self.combobox_process = ttk.Combobox(frame, width=50, values=self.process_values)
         self.combobox_process.grid(row=0, column=1, padx=2, sticky=ttk.W, pady=10)
 
+    def create_statusbar(self):
         statusbar = ttk.Frame(self, style='secondary.TFrame')
         statusbar.pack(fill=X, side=BOTTOM)
 
-        # danger colored inverse label style
         label = ttk.Label(statusbar, bootstyle="inverse-danger", text=" Conectado ao broker ", font='Arial 8 bold')
         label.pack(side=LEFT, padx=10, pady=5)
 
-        label = ttk.Label(statusbar, bootstyle="inverse-success", text=" Processo ativo ", font='Arial 8 bold')
+        label = ttk.Label(statusbar, bootstyle="inverse-success", text=" Processo em execução ", font='Arial 8 bold')
         label.pack(side=LEFT, padx=0, pady=5)
+
+    def on_action(self):
+        if not self.start:
+            self.button_action['image'] = 'start'
+        else:
+            self.button_action['image'] = 'stop'
 
 
