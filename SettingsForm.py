@@ -6,12 +6,11 @@ import json
 
 
 class SettingsForm(ttk.Frame):
-    def __init__(self, master):
+    def __init__(self, master, configuration):
         super().__init__(master)
         self.pack(fill=BOTH, expand=YES, padx=10, pady=10)
-        self.server = None
-        self.port = None
-        self.application_topic = None
+        self.master = master
+        self.configuration = configuration
         self.entry_server = None
         self.entry_port = None
         self.entry_application_topic = None
@@ -33,7 +32,7 @@ class SettingsForm(ttk.Frame):
         label.grid(row=0, column=0, padx=1, sticky=ttk.E, pady=10)
 
         self.entry_server = ttk.Entry(frame,
-                                      textvariable=self.server,
+                                      textvariable=self.configuration['server'],
                                       justify="center",
                                       width=30,
                                       )
@@ -43,7 +42,7 @@ class SettingsForm(ttk.Frame):
         label.grid(row=1, column=0, padx=1, sticky=ttk.E, pady=10)
 
         self.entry_port = ttk.Entry(frame,
-                                    textvariable=self.port,
+                                    textvariable=self.configuration['port'],
                                     justify="center",
                                     width=10
                                     )
@@ -52,13 +51,13 @@ class SettingsForm(ttk.Frame):
         label = ttk.Label(frame, text="Tópico da Aplicação")
         label.grid(row=2, column=0, padx=1, sticky=ttk.E, pady=10)
 
-        self.entry_application_topic = ttk.Entry(frame, textvariable=self.application_topic, width=70)
+        self.entry_application_topic = ttk.Entry(frame, textvariable=self.configuration['application_topic'], width=70)
         self.entry_application_topic.grid(row=2, column=1, padx=2, sticky=ttk.W, pady=10)
 
         label = ttk.Label(frame, text="Tópico do Serviço")
         label.grid(row=3, column=0, padx=1, sticky=ttk.E, pady=10)
 
-        entry = ttk.Entry(frame, width=70)
+        entry = ttk.Entry(frame, width=70, textvariable=self.configuration['service_topic'])
         entry.grid(row=3, column=1, padx=2, sticky=ttk.W, pady=10)
 
     def create_buttons(self):
@@ -72,7 +71,20 @@ class SettingsForm(ttk.Frame):
         self.button_save.pack(side=RIGHT, padx=5, pady=10)
 
     def on_save(self):
-        pass
+        config = Config(self.configuration['server'].get(),
+                        self.configuration['port'].get(),
+                        self.configuration['application_topic'].get(),
+                        self.configuration['service_topic'].get())
+
+        try:
+            with open('config.json', 'w') as f:
+                json.dump(config.__dict__, f)
+
+                messagebox.showinfo(title="Info", message="Configuração salva com sucesso.")
+        except Exception:
+            messagebox.showerror(title="Erro", message="Falha ao salvar arquivo de configuração.")
+
+        self.master.destroy()
 
     def on_cancel(self):
-        pass
+        self.master.destroy()

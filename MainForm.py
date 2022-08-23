@@ -13,11 +13,12 @@ class MainForm(ttk.Frame):
         super().__init__(*args, **kwargs)
         self.pack(fill=BOTH, expand=YES)
         self.start = False
-        self.server = None
-        self.port = None
-        self.application_topic = None
-        self.process = None
-        self.service_topic = None
+        self.configuration = {
+            'server': ttk.StringVar(),
+            'port': ttk.StringVar(),
+            'application_topic': ttk.StringVar(),
+            'service_topic': ttk.StringVar(),
+        }
         self.process = ttk.StringVar()
         self.afterid = ttk.StringVar()
         self.button_action = None
@@ -106,18 +107,18 @@ class MainForm(ttk.Frame):
         setting_form = ttk.Toplevel(self)
         setting_form.title("Configurações")
         setting_form.grab_set()
-        SettingsForm(setting_form)
+        setting_form.resizable(False, False)
+        SettingsForm(setting_form, self.configuration)
 
     def read_config(self):
         try:
             with open('config.json', 'r') as f:
                 data = json.load(f)
                 config = Config(**data)
-                self.server.set(config.server)
-                self.port.set(config.port)
-                self.application_topic.set(config.application_topic)
-                self.process.set(config.process)
-                self.service_topic.set(config.service_topic)
+                self.configuration['server'].set(config.server)
+                self.configuration['port'].set(config.port)
+                self.configuration['application_topic'].set(config.application_topic)
+                self.configuration['service_topic'].set(config.service_topic)
         except PermissionError:
             messagebox.showwarning(title="Atenção", message="Sem permissão para abrir o arquivo de configuração.")
         except FileNotFoundError:
