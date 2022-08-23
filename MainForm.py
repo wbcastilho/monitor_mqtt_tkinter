@@ -4,7 +4,7 @@ from tkinter import messagebox
 from pathlib import Path
 from MyPsutil import MyPsutil
 from Config import Config
-import json
+from MyJSON import MyJSON
 from SettingsForm import SettingsForm
 
 
@@ -112,18 +112,13 @@ class MainForm(ttk.Frame):
 
     def read_config(self):
         try:
-            with open('config.json', 'r') as f:
-                data = json.load(f)
-                config = Config(**data)
-                self.configuration['server'].set(config.server)
-                self.configuration['port'].set(config.port)
-                self.configuration['application_topic'].set(config.application_topic)
-                self.configuration['service_topic'].set(config.service_topic)
-        except PermissionError:
-            messagebox.showwarning(title="Atenção", message="Sem permissão para abrir o arquivo de configuração.")
-        except FileNotFoundError:
-            messagebox.showwarning(title="Atenção", message="Arquivo de configuração não encontrado.")
-        except Exception:
-            messagebox.showwarning(title="Atenção", message="Falha ao abir arquivo de configuração.")
+            my_json = MyJSON('config.json', self.configuration)
+            my_json.read()
+        except PermissionError as err:
+            messagebox.showwarning(title="Atenção", message=err)
+        except FileNotFoundError as err:
+            messagebox.showwarning(title="Atenção", message=err)
+        except Exception as err:
+            messagebox.showwarning(title="Atenção", message=err)
 
 

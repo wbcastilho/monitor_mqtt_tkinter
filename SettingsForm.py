@@ -1,8 +1,7 @@
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from tkinter import messagebox
-from Config import Config
-import json
+from MyJSON import MyJSON
 
 
 class SettingsForm(ttk.Frame):
@@ -71,20 +70,13 @@ class SettingsForm(ttk.Frame):
         self.button_save.pack(side=RIGHT, padx=5, pady=10)
 
     def on_save(self):
-        config = Config(self.configuration['server'].get(),
-                        self.configuration['port'].get(),
-                        self.configuration['application_topic'].get(),
-                        self.configuration['service_topic'].get())
-
         try:
-            with open('config.json', 'w') as f:
-                json.dump(config.__dict__, f)
+            my_json = MyJSON('config.json', self.configuration)
+            my_json.write()
 
-                messagebox.showinfo(title="Info", message="Configuração salva com sucesso.")
-        except Exception:
-            messagebox.showerror(title="Erro", message="Falha ao salvar arquivo de configuração.")
-
-        self.master.destroy()
+            self.master.destroy()
+        except Exception as err:
+            messagebox.showerror(title="Erro", message=err)
 
     def on_cancel(self):
         self.master.destroy()
