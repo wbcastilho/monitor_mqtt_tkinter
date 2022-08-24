@@ -6,7 +6,6 @@ class ClientMqtt:
 
     def __init__(self, name: str, topic: str, ip="127.0.0.1", port=1883, keepalive=60) -> None:
         self._client = mqtt.Client(name + "_" + str(random.randint(1, 10000)))
-        # self._client = mqtt.Client(name)
         self._ip = ip
         self._port = port
         self._keepalive = keepalive
@@ -19,9 +18,11 @@ class ClientMqtt:
         self._client.on_message = self._on_message
         self._client.on_disconnect = self._on_disconnect
 
-        self._client.connect(ip, port, keepalive)
-
-        self._client.loop_start()
+        try:
+            self._client.connect(ip, port, keepalive)
+            self._client.loop_start()
+        except Exception as err:
+            raise Exception(err)
 
     @property
     def connected(self):
@@ -37,8 +38,8 @@ class ClientMqtt:
 
     def _on_disconnect(self, client, userdata, rc) -> None:
         if rc != 0:
+            print("MQTT Server on_disconnect")
             self._connected = False
-            raise Exception("Cliente desconectado do broker de maneira inesperada.")
 
     def _on_message(self, client, userdata, msg) -> None:
         pass

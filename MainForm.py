@@ -99,45 +99,6 @@ class MainForm(ttk.Frame):
                                        font='Arial 8 bold')
         self.label_process.pack_forget()
 
-    def on_action(self):
-        if not self.start:
-            # try:
-            if not self.validate_configuration():
-                messagebox.showwarning(title="Atenção", message="Há alguns campos das configurações que não foram "
-                                                                "preenchidos, clique no botão configurações antes "
-                                                                "de iniciar.")
-            elif not self.validate_combobox_process():
-                messagebox.showwarning(title="Atenção", message="Um processo deve ser selecionado.")
-            else:
-                self.label_process.pack(side=LEFT, padx=0, pady=5)
-                self.combobox_process["state"] = "disabled"
-                self.change_button_action_to_start(False)
-                self.client_mqtt = ClientMqtt("MONITOR_CENSURA", self.configuration['application_topic'].get(),
-                                              self.configuration["server"].get(), int(self.configuration["port"].get()))
-                self.change_label_connection_to_connected(True)
-                self.afterid.set(self.after(0, self.loop))
-                self.start = True
-            '''except Exception as err:
-                self.combobox_process["state"] = "normal"
-                self.change_label_connection_to_connected(False)
-                self.label_process.pack_forget()
-                self.change_button_action_to_start(True)
-                self.start = False
-                messagebox.showerror(title="Erro", message=err)'''
-        else:
-            try:
-                self.client_mqtt.loop_stop_and_disconnect()
-                pass
-            except Exception as err:
-                messagebox.showerror(title="Atenção", message=err)
-            finally:
-                self.label_process.pack_forget()
-                self.combobox_process["state"] = "normal"
-                self.change_button_action_to_start(True)
-                self.change_label_connection_to_connected(False)
-                self.start = False
-                print("Teste")
-
     def on_settings(self):
         if not self.start:
             setting_form = ttk.Toplevel(self)
@@ -160,38 +121,62 @@ class MainForm(ttk.Frame):
         except Exception as err:
             messagebox.showwarning(title="Atenção", message=err)
 
+    def on_action(self):
+        if not self.start:
+            if self.validate():
+                try:
+                    self.client_mqtt = ClientMqtt("MONITOR_MQTT", self.configuration['application_topic'].get(),
+                                                  self.configuration["server"].get(),
+                                                  int(self.configuration["port"].get()))
+                    self.change_label_connection_to_connected(True)
+                    self.change_state_action(True)
+                    self.after(0, self.loop)
+                except Exception as err:
+                    self.change_state_action(False)
+                    messagebox.showerror(title="Erro", message=err)
+        else:
+            try:
+                self.client_mqtt.loop_stop_and_disconnect()
+                self.change_label_connection_to_connected(False)
+                self.after_cancel(self.afterid.get())
+            except Exception as err:
+                messagebox.showerror(title="Atenção", message=err)
+            finally:
+                self.change_state_action(False)
+
     def loop(self):
-        def break_loop(message):
-            self.change_label_connection_to_connected(False)
-            self.change_button_action_to_start(True)
-            self.label_process.pack_forget()
-            self.combobox_process["state"] = "normal"
-            '''if self.client_mqtt.connected:
-                self.client_mqtt.loop_stop_and_disconnect()'''
-            show_message_error(message)
+        def mqtt_connection(cls):
+            try:
+                cls.client_mqtt = ClientMqtt("MONITOR_MQTT", cls.configuration['application_topic'].get(),
+                                             cls.configuration["server"].get(),
+                                             int(cls.configuration["port"].get()))
+                cls.change_label_connection_to_connected(True)
+            except Exception:
+                cls.change_label_connection_to_connected(False)
 
-        def show_message_error(message):
-            messagebox.showerror(title="Erro", message=message)
-
-        # try:
-        if self.client_mqtt.connected:
+        try:
             process_exist = MyPsutil.check_process_exist(self.process.get())
+        except Exception:
+            process_exist = False
 
-            if process_exist:
-                print("Sem alarme")
-                self.change_label_process_to_executing(True)
+        if process_exist:
+            print("Sem alarme")
+            self.change_label_process_to_executing(True)
+
+            if self.client_mqtt.connected:
                 self.client_mqtt.publish(self.configuration["service_topic"].get(), '0')
             else:
-                print("Gera alarme")
-                self.change_label_process_to_executing(False)
-                self.client_mqtt.publish(self.configuration["service_topic"].get(), '1')
-
-            self.afterid.set(self.after(5000, self.loop))
+                mqtt_connection(self)
         else:
-            break_loop("Cliente desconectado do broker de maneira inesperada.")
+            print("Gera alarme")
+            self.change_label_process_to_executing(False)
 
-        '''except Exception as err:
-            break_loop(err)'''
+            if self.client_mqtt.connected:
+                self.client_mqtt.publish(self.configuration["service_topic"].get(), '1')
+            else:
+                mqtt_connection(self)
+
+        self.afterid.set(self.after(5000, self.loop))
 
     def change_button_action_to_start(self, value):
         if value:
@@ -217,6 +202,15 @@ class MainForm(ttk.Frame):
             self.label_process["bootstyle"] = "inverse-danger"
             self.label_process["text"] = " Processo não encontrado "
 
+    def validate(self):
+        if not self.validate_configuration():
+            messagebox.showwarning(title="Atenção", message="Há alguns campos das configurações que não foram "
+                                                            "preenchidos, clique no botão configurações antes "
+                                                            "de iniciar.")
+        elif not self.validate_combobox_process():
+            messagebox.showwarning(title="Atenção", message="Um processo deve ser selecionado.")
+        return True
+
     def validate_configuration(self) -> bool:
         if self.configuration["server"].get() == "":
             return False
@@ -232,4 +226,18 @@ class MainForm(ttk.Frame):
         if self.process.get() == "" or self.process.get() is None:
             return False
         return True
+
+    def change_state_action(self, value):
+        if value:
+            self.label_process.pack(side=LEFT, padx=0, pady=5)
+            self.combobox_process["state"] = "disabled"
+            self.change_button_action_to_start(False)
+            # self.change_label_connection_to_connected(True)
+            self.start = True
+        else:
+            self.label_process.pack_forget()
+            self.combobox_process["state"] = "normal"
+            self.change_button_action_to_start(True)
+            # self.change_label_connection_to_connected(False)
+            self.start = False
 
