@@ -3,7 +3,7 @@ from ttkbootstrap.constants import *
 from tkinter import messagebox
 from pathlib import Path
 from MyPsutil import MyPsutil
-from Config import Config
+from ClientMqtt import ClientMqtt
 from MyJSON import MyJSON
 from SettingsForm import SettingsForm
 
@@ -13,6 +13,7 @@ class MainForm(ttk.Frame):
         super().__init__(*args, **kwargs)
         self.pack(fill=BOTH, expand=YES)
         self.start = False
+        self.client_mqtt = None
         self.configuration = {
             'server': ttk.StringVar(),
             'port': ttk.StringVar(),
@@ -24,6 +25,8 @@ class MainForm(ttk.Frame):
         self.button_action = None
         self.button_settings = None
         self.combobox_process = None
+        self.label_process = None
+        self.label_connection = None
         self.process_values = None
         self.photoimages = []
 
@@ -38,7 +41,8 @@ class MainForm(ttk.Frame):
         image_files = {
             'play': 'icons8-reproduzir-24.png',
             'stop': 'icons8-parar-24.png',
-            'settings-light': 'icons8-configuracoes-24.png'
+            'settings-light': 'icons8-configuracoes-24.png',
+            'refresh': 'icons8-actualizar-24.png'
         }
 
         imgpath = Path(__file__).parent / 'assets'
@@ -87,28 +91,63 @@ class MainForm(ttk.Frame):
         statusbar = ttk.Frame(self, style='secondary.TFrame')
         statusbar.pack(fill=X, side=BOTTOM)
 
-        label = ttk.Label(statusbar, bootstyle="inverse-danger", text=" Conectado ao broker ", font='Arial 8 bold')
-        label.pack(side=LEFT, padx=10, pady=5)
+        self.label_connection = ttk.Label(statusbar, bootstyle="inverse-danger", text=" Desconectado do broker ",
+                                          font='Arial 8 bold')
+        self.label_connection.pack(side=LEFT, padx=10, pady=5)
 
-        label = ttk.Label(statusbar, bootstyle="inverse-success", text=" Processo em execução ", font='Arial 8 bold')
-        label.pack(side=LEFT, padx=0, pady=5)
+        self.label_process = ttk.Label(statusbar, bootstyle="inverse-success", text=" Processo em execução ",
+                                       font='Arial 8 bold')
+        self.label_process.pack_forget()
 
     def on_action(self):
         if not self.start:
-            self.button_action['image'] = 'stop'
-            self.button_action['text'] = 'Parar'
+            try:
+                if not self.validate_configuration():
+                    messagebox.showwarning(title="Atenção", message="Há alguns campos das configurações que não foram "
+                                                                    "preenchidos, clique no botão configurações antes "
+                                                                    "de iniciar.")
+                elif not self.validate_combobox_process():
+                    messagebox.showwarning(title="Atenção", message="Um processo deve ser selecionado.")
+                else:
+                    self.start = True
+                    self.label_process.pack(side=LEFT, padx=0, pady=5)
+                    self.combobox_process["state"] = "disabled"
+                    self.change_button_action_to_start(False)
+                    self.client_mqtt = ClientMqtt("MONITOR_CENSURA", self.configuration['application_topic'].get(),
+                                                  self.configuration["server"].get(), int(self.configuration["port"].get()))
+                    self.change_label_connection_to_connected(True)
+                    self.after(0, self.loop)
+            except Exception as err:
+                self.start = False
+                self.combobox_process["state"] = "normal"
+                self.change_label_connection_to_connected(False)
+                self.label_process.pack_forget()
+                self.change_button_action_to_start(True)
+                messagebox.showerror(title="Erro", message=err)
         else:
-            self.button_action['image'] = 'play'
-            self.button_action['text'] = 'Iniciar'
-
-        self.start = not self.start
+            try:
+                self.client_mqtt.loop_stop()
+                self.client_mqtt.disconnect()
+            except Exception as err:
+                messagebox.showerror(title="Atenção", message=err)
+            finally:
+                self.start = False
+                self.label_process.pack_forget()
+                self.combobox_process["state"] = "normal"
+                self.change_button_action_to_start(True)
+                self.change_label_connection_to_connected(False)
+                self.after_cancel(self.afterid.get())
 
     def on_settings(self):
-        setting_form = ttk.Toplevel(self)
-        setting_form.title("Configurações")
-        setting_form.grab_set()
-        setting_form.resizable(False, False)
-        SettingsForm(setting_form, self.configuration)
+        if not self.start:
+            setting_form = ttk.Toplevel(self)
+            setting_form.title("Configurações")
+            setting_form.grab_set()
+            setting_form.resizable(False, False)
+            SettingsForm(setting_form, self.configuration)
+        else:
+            messagebox.showwarning(title="Atenção", message="Para abrir a janela de configurações é necessário antes "
+                                                            "parar a monitoração clicando no botão Parar.")
 
     def read_config(self):
         try:
@@ -121,4 +160,69 @@ class MainForm(ttk.Frame):
         except Exception as err:
             messagebox.showwarning(title="Atenção", message=err)
 
+    def loop(self):
+        def show_message_error(message):
+            messagebox.showerror(title="Erro", message=message)
+
+        try:
+            if self.client_mqtt.connected:
+                process_exist = MyPsutil.check_process_exist(self.process.get())
+
+                if process_exist:
+                    print("Sem alarme")
+                    self.change_label_process_to_executing(True)
+                    self.client_mqtt.publish(self.configuration["service_topic"].get(), '0')
+                else:
+                    print("Gera alarme")
+                    self.change_label_process_to_executing(False)
+                    self.client_mqtt.publish(self.configuration["service_topic"].get(), '1')
+
+                self.afterid.set(self.after(5000, self.loop))
+            else:
+                self.change_label_connection_to_connected(False)
+                show_message_error("Cliente desconectado do broker de maneira inesperada.")
+
+        except Exception as err:
+            self.change_label_connection_to_connected(False)
+            show_message_error(err)
+
+    def change_button_action_to_start(self, value):
+        if value:
+            self.button_action['image'] = 'play'
+            self.button_action['text'] = 'Iniciar'
+        else:
+            self.button_action['image'] = 'stop'
+            self.button_action['text'] = 'Parar'
+
+    def change_label_connection_to_connected(self, value):
+        if value:
+            self.label_connection["bootstyle"] = "inverse-success"
+            self.label_connection["text"] = "Conectado ao broker"
+        else:
+            self.label_connection["bootstyle"] = "inverse-danger"
+            self.label_connection["text"] = "Desconectado do broker"
+
+    def change_label_process_to_executing(self, value):
+        if value:
+            self.label_process["bootstyle"] = "inverse-success"
+            self.label_process["text"] = " Processo em execução "
+        else:
+            self.label_process["bootstyle"] = "inverse-danger"
+            self.label_process["text"] = " Processo não encontrado "
+
+    def validate_configuration(self) -> bool:
+        if self.configuration["server"].get() == "":
+            return False
+        elif self.configuration["port"].get() == "":
+            return False
+        elif self.configuration["application_topic"].get() == "":
+            return False
+        elif self.configuration["service_topic"].get() == "":
+            return False
+        return True
+
+    def validate_combobox_process(self):
+        if self.process.get() == "" or self.process.get() is None:
+            return False
+        return True
 
