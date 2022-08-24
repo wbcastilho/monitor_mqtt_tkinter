@@ -101,42 +101,42 @@ class MainForm(ttk.Frame):
 
     def on_action(self):
         if not self.start:
-            try:
-                if not self.validate_configuration():
-                    messagebox.showwarning(title="Atenção", message="Há alguns campos das configurações que não foram "
-                                                                    "preenchidos, clique no botão configurações antes "
-                                                                    "de iniciar.")
-                elif not self.validate_combobox_process():
-                    messagebox.showwarning(title="Atenção", message="Um processo deve ser selecionado.")
-                else:
-                    self.start = True
-                    self.label_process.pack(side=LEFT, padx=0, pady=5)
-                    self.combobox_process["state"] = "disabled"
-                    self.change_button_action_to_start(False)
-                    self.client_mqtt = ClientMqtt("MONITOR_CENSURA", self.configuration['application_topic'].get(),
-                                                  self.configuration["server"].get(), int(self.configuration["port"].get()))
-                    self.change_label_connection_to_connected(True)
-                    self.after(0, self.loop)
-            except Exception as err:
-                self.start = False
+            # try:
+            if not self.validate_configuration():
+                messagebox.showwarning(title="Atenção", message="Há alguns campos das configurações que não foram "
+                                                                "preenchidos, clique no botão configurações antes "
+                                                                "de iniciar.")
+            elif not self.validate_combobox_process():
+                messagebox.showwarning(title="Atenção", message="Um processo deve ser selecionado.")
+            else:
+                self.label_process.pack(side=LEFT, padx=0, pady=5)
+                self.combobox_process["state"] = "disabled"
+                self.change_button_action_to_start(False)
+                self.client_mqtt = ClientMqtt("MONITOR_CENSURA", self.configuration['application_topic'].get(),
+                                              self.configuration["server"].get(), int(self.configuration["port"].get()))
+                self.change_label_connection_to_connected(True)
+                self.afterid.set(self.after(0, self.loop))
+                self.start = True
+            '''except Exception as err:
                 self.combobox_process["state"] = "normal"
                 self.change_label_connection_to_connected(False)
                 self.label_process.pack_forget()
                 self.change_button_action_to_start(True)
-                messagebox.showerror(title="Erro", message=err)
+                self.start = False
+                messagebox.showerror(title="Erro", message=err)'''
         else:
             try:
-                self.client_mqtt.loop_stop()
-                self.client_mqtt.disconnect()
+                self.client_mqtt.loop_stop_and_disconnect()
+                pass
             except Exception as err:
                 messagebox.showerror(title="Atenção", message=err)
             finally:
-                self.start = False
                 self.label_process.pack_forget()
                 self.combobox_process["state"] = "normal"
                 self.change_button_action_to_start(True)
                 self.change_label_connection_to_connected(False)
-                self.after_cancel(self.afterid.get())
+                self.start = False
+                print("Teste")
 
     def on_settings(self):
         if not self.start:
@@ -161,30 +161,37 @@ class MainForm(ttk.Frame):
             messagebox.showwarning(title="Atenção", message=err)
 
     def loop(self):
+        def break_loop(message):
+            self.change_label_connection_to_connected(False)
+            self.change_button_action_to_start(True)
+            self.label_process.pack_forget()
+            self.combobox_process["state"] = "normal"
+            '''if self.client_mqtt.connected:
+                self.client_mqtt.loop_stop_and_disconnect()'''
+            show_message_error(message)
+
         def show_message_error(message):
             messagebox.showerror(title="Erro", message=message)
 
-        try:
-            if self.client_mqtt.connected:
-                process_exist = MyPsutil.check_process_exist(self.process.get())
+        # try:
+        if self.client_mqtt.connected:
+            process_exist = MyPsutil.check_process_exist(self.process.get())
 
-                if process_exist:
-                    print("Sem alarme")
-                    self.change_label_process_to_executing(True)
-                    self.client_mqtt.publish(self.configuration["service_topic"].get(), '0')
-                else:
-                    print("Gera alarme")
-                    self.change_label_process_to_executing(False)
-                    self.client_mqtt.publish(self.configuration["service_topic"].get(), '1')
-
-                self.afterid.set(self.after(5000, self.loop))
+            if process_exist:
+                print("Sem alarme")
+                self.change_label_process_to_executing(True)
+                self.client_mqtt.publish(self.configuration["service_topic"].get(), '0')
             else:
-                self.change_label_connection_to_connected(False)
-                show_message_error("Cliente desconectado do broker de maneira inesperada.")
+                print("Gera alarme")
+                self.change_label_process_to_executing(False)
+                self.client_mqtt.publish(self.configuration["service_topic"].get(), '1')
 
-        except Exception as err:
-            self.change_label_connection_to_connected(False)
-            show_message_error(err)
+            self.afterid.set(self.after(5000, self.loop))
+        else:
+            break_loop("Cliente desconectado do broker de maneira inesperada.")
+
+        '''except Exception as err:
+            break_loop(err)'''
 
     def change_button_action_to_start(self, value):
         if value:

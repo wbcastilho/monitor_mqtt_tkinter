@@ -1,10 +1,12 @@
 import paho.mqtt.client as mqtt
+import random
 
 
 class ClientMqtt:
 
     def __init__(self, name: str, topic: str, ip="127.0.0.1", port=1883, keepalive=60) -> None:
-        self._client = mqtt.Client(name)
+        self._client = mqtt.Client(name + "_" + str(random.randint(1, 10000)))
+        # self._client = mqtt.Client(name)
         self._ip = ip
         self._port = port
         self._keepalive = keepalive
@@ -59,3 +61,8 @@ class ClientMqtt:
             self._client.loop_stop(force=True)
         except Exception:
             raise Exception('Falha ao interromper loop do broker.')
+
+    def loop_stop_and_disconnect(self):
+        self.loop_stop()
+        self.disconnect()
+        self._connected = False
