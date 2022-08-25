@@ -1,4 +1,5 @@
 import psutil as ps
+import os
 
 
 class MyPsutil:
@@ -21,4 +22,21 @@ class MyPsutil:
             return process_name in (i.name() for i in ps.process_iter())
         except Exception:
             raise Exception("Erro ao localizar processo.")
+
+    @staticmethod
+    def check_files_size(directory: str, max_size: float) -> bool:
+        try:
+            files_list = os.scandir(directory)
+            for file in files_list:
+                if file.is_file():
+                    file_size = file.stat().st_size
+                    if file_size < max_size:
+                        print("Gera alarme")
+                        return False
+                    else:
+                        print("Sem alarme")
+                        return True
+            return True
+        except Exception:
+            raise Exception("Falha inesperada ao checar tamenho dos arquivos do diretório selecionado.")
 
