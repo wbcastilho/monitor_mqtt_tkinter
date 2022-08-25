@@ -1,4 +1,4 @@
-from MainForm import MainForm
+from forms.MainForm import MainForm
 import ttkbootstrap as ttk
 from pystray import MenuItem as item
 import pystray

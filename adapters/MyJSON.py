@@ -1,5 +1,5 @@
 import json
-from Config import Config
+from models.Config import Config
 
 
 class MyJSON:

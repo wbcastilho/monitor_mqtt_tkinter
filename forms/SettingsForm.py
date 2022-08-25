@@ -1,10 +1,10 @@
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from tkinter import messagebox
-from MyJSON import MyJSON
-from MaskedEntry import MaskedEntry
-from MaskedInt import MaskedInt
-from Validator import Validator
+from adapters.MyJSON import MyJSON
+from widgets.MaskedEntry import MaskedEntry
+from widgets.MaskedInt import MaskedInt
+from helpers.Validator import Validator
 
 
 class SettingsForm(ttk.Frame):
@@ -106,7 +106,7 @@ class SettingsForm(ttk.Frame):
         try:
             if self.validate():
                 self.change_configuration()
-                my_json = MyJSON('config.json', self.configuration)
+                my_json = MyJSON('../config.json', self.configuration)
                 my_json.write()
                 self.master.destroy()
         except Exception as err:

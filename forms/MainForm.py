@@ -2,10 +2,10 @@ import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from tkinter import messagebox
 from pathlib import Path
-from MyPsutil import MyPsutil
-from ClientMqtt import ClientMqtt
-from MyJSON import MyJSON
-from SettingsForm import SettingsForm
+from forms.SettingsForm import SettingsForm
+from adapters.MyPsutil import MyPsutil
+from adapters.ClientMqtt import ClientMqtt
+from adapters.MyJSON import MyJSON
 
 
 class MainForm(ttk.Frame):
@@ -45,7 +45,7 @@ class MainForm(ttk.Frame):
             'refresh': 'icons8-actualizar-24.png'
         }
 
-        imgpath = Path(__file__).parent / 'assets'
+        imgpath = Path(__file__).parent / '../assets'
         for key, val in image_files.items():
             _path = imgpath / val
             self.photoimages.append(ttk.PhotoImage(name=key, file=_path))
