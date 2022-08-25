@@ -2,6 +2,8 @@ import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from tkinter import messagebox
 from MyJSON import MyJSON
+from MaskedEntry import MaskedEntry
+from MaskedInt import MaskedInt
 
 
 class SettingsForm(ttk.Frame):
@@ -16,6 +18,12 @@ class SettingsForm(ttk.Frame):
         self.entry_service_topic = None
         self.button_save = None
         self.button_cancel = None
+
+        masked_int = MaskedInt()
+        self.digit_func = self.register(masked_int.mask_number)
+
+        masked_entry = MaskedEntry()
+        self.vcmd = self.register(masked_entry.mask_ip)
 
         self.create_form_config()
         self.create_buttons()
@@ -34,6 +42,8 @@ class SettingsForm(ttk.Frame):
                                       textvariable=self.configuration['server'],
                                       justify="center",
                                       width=30,
+                                      validate="key",
+                                      validatecommand=(self.vcmd, '%S', '%d')
                                       )
         self.entry_server.grid(row=0, column=1, padx=2, sticky=ttk.W, pady=10)
 
@@ -43,7 +53,9 @@ class SettingsForm(ttk.Frame):
         self.entry_port = ttk.Entry(frame,
                                     textvariable=self.configuration['port'],
                                     justify="center",
-                                    width=10
+                                    width=10,
+                                    validate="key",
+                                    validatecommand=(self.digit_func, '%S', '%d')
                                     )
         self.entry_port.grid(row=1, column=1, padx=2, sticky=ttk.W, pady=10)
 
@@ -80,3 +92,6 @@ class SettingsForm(ttk.Frame):
 
     def on_cancel(self):
         self.master.destroy()
+
+    def validate(self):
+        pass

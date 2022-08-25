@@ -207,8 +207,11 @@ class MainForm(ttk.Frame):
             messagebox.showwarning(title="Atenção", message="Há alguns campos das configurações que não foram "
                                                             "preenchidos, clique no botão configurações antes "
                                                             "de iniciar.")
+            return False
         elif not self.validate_combobox_process():
             messagebox.showwarning(title="Atenção", message="Um processo deve ser selecionado.")
+            return False
+
         return True
 
     def validate_configuration(self) -> bool:
@@ -232,12 +235,10 @@ class MainForm(ttk.Frame):
             self.label_process.pack(side=LEFT, padx=0, pady=5)
             self.combobox_process["state"] = "disabled"
             self.change_button_action_to_start(False)
-            # self.change_label_connection_to_connected(True)
             self.start = True
         else:
             self.label_process.pack_forget()
             self.combobox_process["state"] = "normal"
             self.change_button_action_to_start(True)
-            # self.change_label_connection_to_connected(False)
             self.start = False
 
