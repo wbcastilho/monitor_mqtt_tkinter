@@ -4,6 +4,7 @@ from tkinter import messagebox
 from MyJSON import MyJSON
 from MaskedEntry import MaskedEntry
 from MaskedInt import MaskedInt
+from Validator import Validator
 
 
 class SettingsForm(ttk.Frame):
@@ -12,6 +13,12 @@ class SettingsForm(ttk.Frame):
         self.pack(fill=BOTH, expand=YES, padx=10, pady=10)
         self.master = master
         self.configuration = configuration
+        self.local_configuration = {
+            'server': ttk.StringVar(),
+            'port': ttk.StringVar(),
+            'application_topic': ttk.StringVar(),
+            'service_topic': ttk.StringVar(),
+        }
         self.entry_server = None
         self.entry_port = None
         self.entry_application_topic = None
@@ -25,6 +32,7 @@ class SettingsForm(ttk.Frame):
         masked_entry = MaskedEntry()
         self.vcmd = self.register(masked_entry.mask_ip)
 
+        self.init_configuration()
         self.create_form_config()
         self.create_buttons()
 
@@ -39,11 +47,11 @@ class SettingsForm(ttk.Frame):
         label.grid(row=0, column=0, padx=1, sticky=ttk.E, pady=10)
 
         self.entry_server = ttk.Entry(frame,
-                                      textvariable=self.configuration['server'],
+                                      textvariable=self.local_configuration['server'],
                                       justify="center",
                                       width=30,
                                       validate="key",
-                                      validatecommand=(self.vcmd, '%S', '%d')
+                                      validatecommand=(self.vcmd, '%S')
                                       )
         self.entry_server.grid(row=0, column=1, padx=2, sticky=ttk.W, pady=10)
 
@@ -51,7 +59,7 @@ class SettingsForm(ttk.Frame):
         label.grid(row=1, column=0, padx=1, sticky=ttk.E, pady=10)
 
         self.entry_port = ttk.Entry(frame,
-                                    textvariable=self.configuration['port'],
+                                    textvariable=self.local_configuration['port'],
                                     justify="center",
                                     width=10,
                                     validate="key",
@@ -62,13 +70,14 @@ class SettingsForm(ttk.Frame):
         label = ttk.Label(frame, text="Tópico da Aplicação")
         label.grid(row=2, column=0, padx=1, sticky=ttk.E, pady=10)
 
-        self.entry_application_topic = ttk.Entry(frame, textvariable=self.configuration['application_topic'], width=70)
+        self.entry_application_topic = ttk.Entry(frame, textvariable=self.local_configuration['application_topic'],
+                                                 width=70)
         self.entry_application_topic.grid(row=2, column=1, padx=2, sticky=ttk.W, pady=10)
 
         label = ttk.Label(frame, text="Tópico do Serviço")
         label.grid(row=3, column=0, padx=1, sticky=ttk.E, pady=10)
 
-        entry = ttk.Entry(frame, width=70, textvariable=self.configuration['service_topic'])
+        entry = ttk.Entry(frame, width=70, textvariable=self.local_configuration['service_topic'])
         entry.grid(row=3, column=1, padx=2, sticky=ttk.W, pady=10)
 
     def create_buttons(self):
@@ -81,12 +90,25 @@ class SettingsForm(ttk.Frame):
         self.button_save = ttk.Button(frame, text="Salvar", bootstyle="success", command=self.on_save)
         self.button_save.pack(side=RIGHT, padx=5, pady=10)
 
+    def init_configuration(self):
+        self.local_configuration["server"].set(self.configuration["server"].get())
+        self.local_configuration["port"].set(self.configuration["port"].get())
+        self.local_configuration["application_topic"].set(self.configuration["application_topic"].get())
+        self.local_configuration["service_topic"].set(self.configuration["service_topic"].get())
+
+    def change_configuration(self):
+        self.configuration["server"].set(self.local_configuration["server"].get())
+        self.configuration["port"].set(self.local_configuration["port"].get())
+        self.configuration["application_topic"].set(self.local_configuration["application_topic"].get())
+        self.configuration["service_topic"].set(self.local_configuration["service_topic"].get())
+
     def on_save(self):
         try:
-            my_json = MyJSON('config.json', self.configuration)
-            my_json.write()
-
-            self.master.destroy()
+            if self.validate():
+                self.change_configuration()
+                my_json = MyJSON('config.json', self.configuration)
+                my_json.write()
+                self.master.destroy()
         except Exception as err:
             messagebox.showerror(title="Erro", message=err)
 
@@ -94,4 +116,21 @@ class SettingsForm(ttk.Frame):
         self.master.destroy()
 
     def validate(self):
-        pass
+        if not self.validate_empty():
+            messagebox.showwarning(title="Erro", message="Todos os campos devem ser preenchidos.")
+            return False
+        elif not Validator.validate_ip(self.local_configuration["server"].get()):
+            messagebox.showwarning(title="Erro", message="Ip informado inválido no campo Server.")
+            return False
+        return True
+
+    def validate_empty(self):
+        if self.local_configuration["server"].get() == "":
+            return False
+        elif self.local_configuration["port"].get() == "":
+            return False
+        elif self.local_configuration["application_topic"].get() == "":
+            return False
+        elif self.local_configuration["service_topic"].get() == "":
+            return False
+        return True
