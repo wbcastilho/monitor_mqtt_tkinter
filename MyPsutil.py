@@ -24,9 +24,9 @@ class MyPsutil:
             raise Exception("Erro ao localizar processo.")
 
     @staticmethod
-    def check_files_size(directory: str, max_size: float) -> bool:
+    def check_files_size(path: str, max_size: float) -> bool:
         try:
-            files_list = os.scandir(directory)
+            files_list = os.scandir(path)
             for file in files_list:
                 if file.is_file():
                     file_size = file.stat().st_size
