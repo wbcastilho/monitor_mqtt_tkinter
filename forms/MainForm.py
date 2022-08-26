@@ -99,7 +99,7 @@ class MainForm(ttk.Frame):
                                        font='Arial 8 bold')
         self.label_process.pack_forget()
 
-    def on_settings(self):
+    def on_settings(self) -> None:
         if not self.start:
             setting_form = ttk.Toplevel(self)
             setting_form.title("Configurações")
@@ -110,7 +110,7 @@ class MainForm(ttk.Frame):
             messagebox.showwarning(title="Atenção", message="Para abrir a janela de configurações é necessário antes "
                                                             "parar a monitoração clicando no botão Parar.")
 
-    def read_config(self):
+    def read_config(self) -> None:
         try:
             my_json = MyJSON('config.json', self.configuration)
             my_json.read()
@@ -178,7 +178,7 @@ class MainForm(ttk.Frame):
 
         self.afterid.set(self.after(5000, self.loop))
 
-    def change_button_action_to_start(self, value):
+    def change_button_action_to_start(self, value: bool) -> None:
         if value:
             self.button_action['image'] = 'play'
             self.button_action['text'] = 'Iniciar'
@@ -186,7 +186,7 @@ class MainForm(ttk.Frame):
             self.button_action['image'] = 'stop'
             self.button_action['text'] = 'Parar'
 
-    def change_label_connection_to_connected(self, value):
+    def change_label_connection_to_connected(self, value: bool) -> None:
         if value:
             self.label_connection["bootstyle"] = "inverse-success"
             self.label_connection["text"] = "Conectado ao broker"
@@ -194,7 +194,7 @@ class MainForm(ttk.Frame):
             self.label_connection["bootstyle"] = "inverse-danger"
             self.label_connection["text"] = "Desconectado do broker"
 
-    def change_label_process_to_executing(self, value):
+    def change_label_process_to_executing(self, value: bool) -> None:
         if value:
             self.label_process["bootstyle"] = "inverse-success"
             self.label_process["text"] = " Processo em execução "
@@ -202,7 +202,7 @@ class MainForm(ttk.Frame):
             self.label_process["bootstyle"] = "inverse-danger"
             self.label_process["text"] = " Processo não encontrado "
 
-    def validate(self):
+    def validate(self) -> bool:
         if not self.validate_configuration():
             messagebox.showwarning(title="Atenção", message="Há alguns campos das configurações que não foram "
                                                             "preenchidos, clique no botão configurações antes "
@@ -225,12 +225,12 @@ class MainForm(ttk.Frame):
             return False
         return True
 
-    def validate_combobox_process(self):
+    def validate_combobox_process(self) -> bool:
         if self.process.get() == "" or self.process.get() is None:
             return False
         return True
 
-    def change_state_action(self, value):
+    def change_state_action(self, value: bool) -> None:
         if value:
             self.label_process.pack(side=LEFT, padx=0, pady=5)
             self.combobox_process["state"] = "disabled"

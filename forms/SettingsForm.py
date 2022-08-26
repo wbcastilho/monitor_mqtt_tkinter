@@ -90,29 +90,29 @@ class SettingsForm(ttk.Frame):
         self.button_save = ttk.Button(frame, text="Salvar", bootstyle="success", command=self.on_save)
         self.button_save.pack(side=RIGHT, padx=5, pady=10)
 
-    def init_configuration(self):
+    def init_configuration(self) -> None:
         self.local_configuration["server"].set(self.configuration["server"].get())
         self.local_configuration["port"].set(self.configuration["port"].get())
         self.local_configuration["application_topic"].set(self.configuration["application_topic"].get())
         self.local_configuration["service_topic"].set(self.configuration["service_topic"].get())
 
-    def change_configuration(self):
+    def change_configuration(self) -> None:
         self.configuration["server"].set(self.local_configuration["server"].get())
         self.configuration["port"].set(self.local_configuration["port"].get())
         self.configuration["application_topic"].set(self.local_configuration["application_topic"].get())
         self.configuration["service_topic"].set(self.local_configuration["service_topic"].get())
 
-    def on_save(self):
+    def on_save(self) -> None:
         try:
             if self.validate():
                 self.change_configuration()
-                my_json = MyJSON('../config.json', self.configuration)
+                my_json = MyJSON('config.json', self.configuration)
                 my_json.write()
                 self.master.destroy()
         except Exception as err:
             messagebox.showerror(title="Erro", message=err)
 
-    def on_cancel(self):
+    def on_cancel(self) -> None:
         self.master.destroy()
 
     def validate(self):
@@ -124,7 +124,7 @@ class SettingsForm(ttk.Frame):
             return False
         return True
 
-    def validate_empty(self):
+    def validate_empty(self) -> bool:
         if self.local_configuration["server"].get() == "":
             return False
         elif self.local_configuration["port"].get() == "":
