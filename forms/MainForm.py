@@ -1,5 +1,6 @@
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
+from ttkbootstrap import utility
 from tkinter import messagebox
 from pathlib import Path
 from forms.SettingsForm import SettingsForm
@@ -25,16 +26,19 @@ class MainForm(ttk.Frame):
         self.button_action = None
         self.button_settings = None
         self.combobox_process = None
-        self.label_process = None
-        self.label_connection = None
+        self.label_status_process = None
+        self.label_status_connection = None
         self.process_values = None
+        self.resultview = None
         self.photoimages = []
 
         self.associate_icons()
         self.init_combobox_process()
         self.create_buttonbar()
         self.create_label_frame()
-        self.create_statusbar()
+        self.create_label_path()
+        self.create_memoria_frame()
+        self.create_status_frame()
         self.read_config()
 
     def associate_icons(self):
@@ -76,28 +80,118 @@ class MainForm(ttk.Frame):
 
     def create_label_frame(self):
         label_frame = ttk.Labelframe(self, text='Monitoração Processo')
-        label_frame.pack(fill="x", padx=10, pady=20)
+        label_frame.pack(fill="x", padx=10, pady=(10, 5))
 
         frame = ttk.Frame(label_frame)
         frame.pack(fill="x", padx=20, pady=20)
 
         label = ttk.Label(frame, text="Processo")
-        label.grid(row=0, column=0, padx=1, sticky=ttk.E, pady=10)
+        label.grid(row=0, column=0, padx=1, sticky=ttk.E)
 
         self.combobox_process = ttk.Combobox(frame, width=50, textvariable=self.process, values=self.process_values)
-        self.combobox_process.grid(row=0, column=1, padx=2, sticky=ttk.W, pady=10)
+        self.combobox_process.grid(row=0, column=1, padx=2, sticky=ttk.W)
 
-    def create_statusbar(self):
-        statusbar = ttk.Frame(self, style='secondary.TFrame')
-        statusbar.pack(fill=X, side=BOTTOM)
+    def create_label_path(self):
+        label_frame = ttk.Labelframe(self, text='Monitoração Arquivos Pasta')
+        label_frame.pack(fill="x", padx=10, pady=5)
 
-        self.label_connection = ttk.Label(statusbar, bootstyle="inverse-danger", text=" Desconectado do broker ",
-                                          font='Arial 8 bold')
-        self.label_connection.pack(side=LEFT, padx=10, pady=5)
+        frame = ttk.Frame(label_frame)
+        frame.pack(fill="x", padx=20, pady=20)
 
-        self.label_process = ttk.Label(statusbar, bootstyle="inverse-success", text=" Processo em execução ",
-                                       font='Arial 8 bold')
-        self.label_process.pack_forget()
+        label = ttk.Label(frame, text="Pasta")
+        label.grid(row=0, column=0, padx=1, sticky=ttk.E, pady=10)
+
+        path = ttk.Entry(frame, width=50, state="disabled")
+        path.grid(row=0, column=1, padx=2, sticky=ttk.W, pady=10)
+
+        button = ttk.Button(frame, text="Selecionar Pasta", bootstyle=(INFO, OUTLINE))
+        button.grid(row=0, column=2, padx=2, pady=10)
+
+    def create_memoria_frame(self):
+        frame = ttk.Frame(self)
+        frame.pack(fill="x")
+
+        frame_grid = ttk.Frame(frame)
+        frame_grid.grid(row=0, column=0, sticky=ttk.W)
+
+        label_frame = ttk.Labelframe(frame_grid, text='Memória')
+        label_frame.pack(fill="x", padx=10, pady=5)
+
+        meter = ttk.Meter(
+            master=label_frame,
+            metersize=100,
+            padding=5,
+            amountused=25,
+            metertype="full",
+            interactive=True,
+        )
+        meter.pack(fill="x")
+
+        frame_grid = ttk.Frame(frame)
+        frame_grid.grid(row=0, column=1, sticky=ttk.W)
+
+        label_frame = ttk.Labelframe(frame_grid, text='CPU')
+        label_frame.pack(fill="x", padx=10, pady=5)
+
+        meter = ttk.Meter(
+            master=label_frame,
+            metersize=100,
+            padding=5,
+            amountused=25,
+            metertype="full",
+            interactive=True,
+        )
+        meter.pack(fill="x")
+
+        frame_grid = ttk.Frame(frame)
+        frame_grid.grid(row=0, column=2, sticky=ttk.W)
+
+        label_frame = ttk.Labelframe(frame_grid, text='HD Sistema')
+        label_frame.pack(fill="x", padx=10, pady=5)
+
+        meter = ttk.Meter(
+            master=label_frame,
+            metersize=100,
+            padding=5,
+            amountused=25,
+            metertype="full",
+            interactive=True,
+        )
+        meter.pack(fill="x")
+
+        frame_grid = ttk.Frame(frame)
+        frame_grid.grid(row=0, column=3, sticky=ttk.W)
+
+    def create_status_frame(self):
+        label_frame = ttk.Labelframe(self, text='Status')
+        label_frame.pack(fill="x", padx=10, pady=(5, 10))
+
+        frame = ttk.Frame(label_frame, borderwidth=1, relief="sunken")
+        frame.pack(fill="both", padx=10, pady=10)
+
+        label = ttk.Label(frame, text=" Descrição", font='Arial 8 bold', width=50, bootstyle="inverse-primary")
+        label.grid(row=0, column=0, sticky=ttk.W)
+
+        label = ttk.Label(frame, text=" Status", font='Arial 8 bold', width=30, bootstyle="inverse-primary")
+        label.grid(row=0, column=1, sticky=ttk.W)
+
+        label = ttk.Label(frame, text=" Conexão Broker")
+        label.grid(row=1, column=0, sticky=ttk.W)
+
+        self.label_status_connection = ttk.Label(frame, text=" Desconectado", font='Arial 8 bold', bootstyle="danger")
+        self.label_status_connection.grid(row=1, column=1, sticky=ttk.W)
+
+        label = ttk.Label(frame, text=" Processo")
+        label.grid(row=2, column=0, sticky=ttk.W)
+
+        self.label_status_process = ttk.Label(frame, text=" Não executando", font='Arial 8 bold', bootstyle="danger")
+        self.label_status_process.grid(row=2, column=1, sticky=ttk.W)
+
+        label = ttk.Label(frame, text=" Arquivos Pasta")
+        label.grid(row=3, column=0, sticky=ttk.W)
+
+        pasta = ttk.Label(frame, text=" Falha", font='Arial 8 bold', bootstyle="danger")
+        pasta.grid(row=3, column=1, sticky=ttk.W)
 
     def on_settings(self) -> None:
         if not self.start:
@@ -188,19 +282,19 @@ class MainForm(ttk.Frame):
 
     def change_label_connection_to_connected(self, value: bool) -> None:
         if value:
-            self.label_connection["bootstyle"] = "inverse-success"
-            self.label_connection["text"] = "Conectado ao broker"
+            self.label_status_connection["bootstyle"] = "success"
+            self.label_status_connection["text"] = " Conectado"
         else:
-            self.label_connection["bootstyle"] = "inverse-danger"
-            self.label_connection["text"] = "Desconectado do broker"
+            self.label_status_connection["bootstyle"] = "danger"
+            self.label_status_connection["text"] = " Desconectado"
 
     def change_label_process_to_executing(self, value: bool) -> None:
         if value:
-            self.label_process["bootstyle"] = "inverse-success"
-            self.label_process["text"] = " Processo em execução "
+            self.label_status_process["bootstyle"] = "success"
+            self.label_status_process["text"] = " Executando"
         else:
-            self.label_process["bootstyle"] = "inverse-danger"
-            self.label_process["text"] = " Processo não encontrado "
+            self.label_status_process["bootstyle"] = "danger"
+            self.label_status_process["text"] = " Não executando"
 
     def validate(self) -> bool:
         if not self.validate_configuration():
@@ -232,13 +326,13 @@ class MainForm(ttk.Frame):
 
     def change_state_action(self, value: bool) -> None:
         if value:
-            self.label_process.pack(side=LEFT, padx=0, pady=5)
             self.combobox_process["state"] = "disabled"
             self.change_button_action_to_start(False)
+            self.change_label_process_to_executing(False)
             self.start = True
         else:
-            self.label_process.pack_forget()
             self.combobox_process["state"] = "normal"
             self.change_button_action_to_start(True)
+            self.change_label_process_to_executing(False)
             self.start = False
 

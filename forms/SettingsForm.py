@@ -34,6 +34,7 @@ class SettingsForm(ttk.Frame):
 
         self.init_configuration()
         self.create_form_config()
+        self.create_form_monitoracao()
         self.create_buttons()
 
     def create_form_config(self):
@@ -73,6 +74,13 @@ class SettingsForm(ttk.Frame):
         self.entry_application_topic = ttk.Entry(frame, textvariable=self.local_configuration['application_topic'],
                                                  width=70)
         self.entry_application_topic.grid(row=2, column=1, padx=2, sticky=ttk.W, pady=10)
+
+    def create_form_monitoracao(self):
+        label_frame = ttk.Labelframe(self, text='Monitoração Processo')
+        label_frame.pack(fill="x", padx=10, pady=10)
+
+        frame = ttk.Frame(label_frame)
+        frame.pack(fill="x", padx=20, pady=20)
 
         label = ttk.Label(frame, text="Tópico do Serviço")
         label.grid(row=3, column=0, padx=1, sticky=ttk.E, pady=10)

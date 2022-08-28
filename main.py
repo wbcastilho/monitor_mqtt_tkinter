@@ -31,6 +31,7 @@ def hide_window_threading():
 if __name__ == '__main__':
     app = ttk.Window(
         title="Monitor MQTT",
+        resizable=(False, False)
     )
     MainForm(app)
 
