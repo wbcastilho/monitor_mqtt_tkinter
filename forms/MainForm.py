@@ -7,6 +7,7 @@ from forms.SettingsForm import SettingsForm
 from adapters.MyPsutil import MyPsutil
 from adapters.ClientMqtt import ClientMqtt
 from adapters.MyJSON import MyJSON
+from tkinter import filedialog
 
 
 class MainForm(ttk.Frame):
@@ -22,12 +23,19 @@ class MainForm(ttk.Frame):
             'service_topic': ttk.StringVar(),
         }
         self.process = ttk.StringVar()
+        self.path = ttk.StringVar()
         self.afterid = ttk.StringVar()
+        self.memory_meter = None
+        self.cpu_meter = None
+        self.disk_meter = None
+
         self.button_action = None
         self.button_settings = None
         self.combobox_process = None
-        self.label_status_process = None
+        self.label_status_monitoring = None
         self.label_status_connection = None
+        self.label_status_process = None
+        self.label_status_path = None
         self.process_values = None
         self.resultview = None
         self.photoimages = []
@@ -83,7 +91,7 @@ class MainForm(ttk.Frame):
         label_frame.pack(fill="x", padx=10, pady=(10, 5))
 
         frame = ttk.Frame(label_frame)
-        frame.pack(fill="x", padx=20, pady=20)
+        frame.pack(fill="x", padx=20, pady=15)
 
         label = ttk.Label(frame, text="Processo")
         label.grid(row=0, column=0, padx=1, sticky=ttk.E)
@@ -96,16 +104,16 @@ class MainForm(ttk.Frame):
         label_frame.pack(fill="x", padx=10, pady=5)
 
         frame = ttk.Frame(label_frame)
-        frame.pack(fill="x", padx=20, pady=20)
+        frame.pack(fill="x", padx=20, pady=15)
 
         label = ttk.Label(frame, text="Pasta")
-        label.grid(row=0, column=0, padx=1, sticky=ttk.E, pady=10)
+        label.grid(row=0, column=0, padx=1, sticky=ttk.E)
 
-        path = ttk.Entry(frame, width=50, state="disabled")
-        path.grid(row=0, column=1, padx=2, sticky=ttk.W, pady=10)
+        path = ttk.Entry(frame, width=50, textvariable=self.path, state="disabled")
+        path.grid(row=0, column=1, padx=2, sticky=ttk.W)
 
-        button = ttk.Button(frame, text="Selecionar Pasta", bootstyle=(INFO, OUTLINE))
-        button.grid(row=0, column=2, padx=2, pady=10)
+        button = ttk.Button(frame, text="Selecionar Pasta", bootstyle=(INFO, OUTLINE), command=self.on_browse)
+        button.grid(row=0, column=2, padx=2)
 
     def create_memoria_frame(self):
         frame = ttk.Frame(self)
@@ -117,15 +125,18 @@ class MainForm(ttk.Frame):
         label_frame = ttk.Labelframe(frame_grid, text='Memória')
         label_frame.pack(fill="x", padx=10, pady=5)
 
-        meter = ttk.Meter(
+        self.memory_meter = ttk.Meter(
             master=label_frame,
-            metersize=100,
-            padding=5,
-            amountused=25,
+            metersize=135,
+            amounttotal=100,
+            padding=(10, 10),
+            amountused=0,
             metertype="full",
-            interactive=True,
+            subtext="",
+            subtextfont='-size 1',
+            interactive=False
         )
-        meter.pack(fill="x")
+        self.memory_meter.pack(fill="x")
 
         frame_grid = ttk.Frame(frame)
         frame_grid.grid(row=0, column=1, sticky=ttk.W)
@@ -133,15 +144,18 @@ class MainForm(ttk.Frame):
         label_frame = ttk.Labelframe(frame_grid, text='CPU')
         label_frame.pack(fill="x", padx=10, pady=5)
 
-        meter = ttk.Meter(
+        self.cpu_meter = ttk.Meter(
             master=label_frame,
-            metersize=100,
-            padding=5,
-            amountused=25,
+            metersize=135,
+            amounttotal=100,
+            padding=(10, 10),
+            amountused=0,
             metertype="full",
-            interactive=True,
+            subtext="",
+            subtextfont='-size 1',
+            interactive=False,
         )
-        meter.pack(fill="x")
+        self.cpu_meter.pack(fill="x")
 
         frame_grid = ttk.Frame(frame)
         frame_grid.grid(row=0, column=2, sticky=ttk.W)
@@ -149,15 +163,18 @@ class MainForm(ttk.Frame):
         label_frame = ttk.Labelframe(frame_grid, text='HD Sistema')
         label_frame.pack(fill="x", padx=10, pady=5)
 
-        meter = ttk.Meter(
+        self.disk_meter = ttk.Meter(
             master=label_frame,
-            metersize=100,
-            padding=5,
-            amountused=25,
+            metersize=135,
+            amounttotal=100,
+            padding=(10, 10),
+            amountused=0,
             metertype="full",
-            interactive=True,
+            subtext="",
+            subtextfont='-size 1',
+            interactive=False,
         )
-        meter.pack(fill="x")
+        self.disk_meter.pack(fill="x")
 
         frame_grid = ttk.Frame(frame)
         frame_grid.grid(row=0, column=3, sticky=ttk.W)
@@ -175,34 +192,29 @@ class MainForm(ttk.Frame):
         label = ttk.Label(frame, text=" Status", font='Arial 8 bold', width=30, bootstyle="inverse-primary")
         label.grid(row=0, column=1, sticky=ttk.W)
 
-        label = ttk.Label(frame, text=" Conexão Broker")
+        label = ttk.Label(frame, text=" Monitoração")
         label.grid(row=1, column=0, sticky=ttk.W)
 
-        self.label_status_connection = ttk.Label(frame, text=" Desconectado", font='Arial 8 bold', bootstyle="danger")
-        self.label_status_connection.grid(row=1, column=1, sticky=ttk.W)
+        self.label_status_monitoring = ttk.Label(frame, text=" Parado", font='Arial 8 bold', bootstyle="danger")
+        self.label_status_monitoring.grid(row=1, column=1, sticky=ttk.W)
 
-        label = ttk.Label(frame, text=" Processo")
+        label = ttk.Label(frame, text=" Conexão Broker")
         label.grid(row=2, column=0, sticky=ttk.W)
 
-        self.label_status_process = ttk.Label(frame, text=" Não executando", font='Arial 8 bold', bootstyle="danger")
-        self.label_status_process.grid(row=2, column=1, sticky=ttk.W)
+        self.label_status_connection = ttk.Label(frame, text=" Desconectado", font='Arial 8 bold', bootstyle="danger")
+        self.label_status_connection.grid(row=2, column=1, sticky=ttk.W)
 
-        label = ttk.Label(frame, text=" Arquivos Pasta")
+        label = ttk.Label(frame, text=" Processo")
         label.grid(row=3, column=0, sticky=ttk.W)
 
-        pasta = ttk.Label(frame, text=" Falha", font='Arial 8 bold', bootstyle="danger")
-        pasta.grid(row=3, column=1, sticky=ttk.W)
+        self.label_status_process = ttk.Label(frame, text=" Não executando", font='Arial 8 bold', bootstyle="danger")
+        self.label_status_process.grid(row=3, column=1, sticky=ttk.W)
 
-    def on_settings(self) -> None:
-        if not self.start:
-            setting_form = ttk.Toplevel(self)
-            setting_form.title("Configurações")
-            setting_form.grab_set()
-            setting_form.resizable(False, False)
-            SettingsForm(setting_form, self.configuration)
-        else:
-            messagebox.showwarning(title="Atenção", message="Para abrir a janela de configurações é necessário antes "
-                                                            "parar a monitoração clicando no botão Parar.")
+        label = ttk.Label(frame, text=" Arquivos Pasta")
+        label.grid(row=4, column=0, sticky=ttk.W)
+
+        self.label_status_path = ttk.Label(frame, text=" Falha", font='Arial 8 bold', bootstyle="danger")
+        self.label_status_path.grid(row=4, column=1, sticky=ttk.W)
 
     def read_config(self) -> None:
         try:
@@ -215,6 +227,22 @@ class MainForm(ttk.Frame):
         except Exception as err:
             messagebox.showwarning(title="Atenção", message=err)
 
+    def on_settings(self) -> None:
+        if not self.start:
+            setting_form = ttk.Toplevel(self)
+            setting_form.title("Configurações")
+            setting_form.grab_set()
+            setting_form.resizable(False, False)
+            SettingsForm(setting_form, self.configuration)
+        else:
+            messagebox.showwarning(title="Atenção", message="Para abrir a janela de configurações é necessário antes "
+                                                            "parar a monitoração clicando no botão Parar.")
+
+    def on_browse(self):
+        path = filedialog.askdirectory(initialdir=r'c:\\', title="Selecionar Pasta")
+        if path:
+            self.path.set(path)
+
     def on_action(self):
         if not self.start:
             if self.validate():
@@ -224,6 +252,7 @@ class MainForm(ttk.Frame):
                                                   int(self.configuration["port"].get()))
                     self.change_label_connection_to_connected(True)
                     self.change_state_action(True)
+                    self.change_label_monitoring_to_running(True)
                     self.after(0, self.loop)
                 except Exception as err:
                     self.change_state_action(False)
@@ -237,6 +266,7 @@ class MainForm(ttk.Frame):
                 messagebox.showerror(title="Atenção", message=err)
             finally:
                 self.change_state_action(False)
+                self.change_label_monitoring_to_running(False)
 
     def loop(self):
         def mqtt_connection(cls):
@@ -252,6 +282,29 @@ class MainForm(ttk.Frame):
             process_exist = MyPsutil.check_process_exist(self.process.get())
         except Exception:
             process_exist = False
+
+        try:
+            file_size_ok = MyPsutil.check_files_size(self.path.get(), 10000)
+        except Exception:
+            file_size_ok = False
+
+        try:
+            memory = MyPsutil.show_virtual_memory()
+            self.memory_meter.configure(amountused=memory.percent)
+        except Exception:
+            pass
+
+        try:
+            cpu = MyPsutil.show_cpu_percent()
+            self.cpu_meter.configure(amountused=cpu)
+        except Exception:
+            pass
+
+        try:
+            disk = MyPsutil.show_disk_usage("c:")
+            self.disk_meter.configure(amountused=disk.percent)
+        except Exception:
+            pass
 
         if process_exist:
             print("Sem alarme")
@@ -270,6 +323,11 @@ class MainForm(ttk.Frame):
             else:
                 mqtt_connection(self)
 
+        if file_size_ok:
+            self.change_label_path_to_ok(True)
+        else:
+            self.change_label_path_to_ok(False)
+
         self.afterid.set(self.after(5000, self.loop))
 
     def change_button_action_to_start(self, value: bool) -> None:
@@ -279,6 +337,14 @@ class MainForm(ttk.Frame):
         else:
             self.button_action['image'] = 'stop'
             self.button_action['text'] = 'Parar'
+
+    def change_label_monitoring_to_running(self, value: bool) -> None:
+        if value:
+            self.label_status_monitoring["bootstyle"] = "success"
+            self.label_status_monitoring["text"] = " Rodando"
+        else:
+            self.label_status_monitoring["bootstyle"] = "danger"
+            self.label_status_monitoring["text"] = " Parado"
 
     def change_label_connection_to_connected(self, value: bool) -> None:
         if value:
@@ -296,6 +362,14 @@ class MainForm(ttk.Frame):
             self.label_status_process["bootstyle"] = "danger"
             self.label_status_process["text"] = " Não executando"
 
+    def change_label_path_to_ok(self, value: bool) -> None:
+        if value:
+            self.label_status_path["bootstyle"] = "success"
+            self.label_status_path["text"] = " Ok"
+        else:
+            self.label_status_path["bootstyle"] = "danger"
+            self.label_status_path["text"] = " Falha"
+
     def validate(self) -> bool:
         if not self.validate_configuration():
             messagebox.showwarning(title="Atenção", message="Há alguns campos das configurações que não foram "
@@ -304,6 +378,9 @@ class MainForm(ttk.Frame):
             return False
         elif not self.validate_combobox_process():
             messagebox.showwarning(title="Atenção", message="Um processo deve ser selecionado.")
+            return False
+        elif not self.validate_entry_path():
+            messagebox.showwarning(title="Atenção", message="Uma pasta deve ser selecionada.")
             return False
 
         return True
@@ -324,15 +401,28 @@ class MainForm(ttk.Frame):
             return False
         return True
 
+    def validate_entry_path(self) -> bool:
+        if self.path.get() == "" or self.path.get() is None:
+            return False
+        return True
+
     def change_state_action(self, value: bool) -> None:
         if value:
             self.combobox_process["state"] = "disabled"
             self.change_button_action_to_start(False)
-            self.change_label_process_to_executing(False)
+            # self.change_label_process_to_executing(False)
+            # self.change_label_path_to_ok(False)
             self.start = True
         else:
             self.combobox_process["state"] = "normal"
             self.change_button_action_to_start(True)
             self.change_label_process_to_executing(False)
+            self.change_label_path_to_ok(False)
+            self.reset_meters()
             self.start = False
+
+    def reset_meters(self):
+        self.memory_meter.configure(amountused=0)
+        self.cpu_meter.configure(amountused=0)
+        self.disk_meter.configure(amountused=0)
 

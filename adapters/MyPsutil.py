@@ -40,3 +40,23 @@ class MyPsutil:
         except Exception:
             raise Exception("Falha inesperada ao checar tamenho dos arquivos do diretório selecionado.")
 
+    @staticmethod
+    def show_virtual_memory():
+        try:
+            return ps.virtual_memory()
+        except Exception:
+            raise Exception("Falha inesperada ao fazer a leitura da memória.")
+
+    @staticmethod
+    def show_cpu_percent():
+        try:
+            return ps.cpu_percent(interval=1)
+        except Exception:
+            raise Exception("Falha inesperada ao fazer a leitura da cpu.")
+
+    @staticmethod
+    def show_disk_usage(partition: str):
+        try:
+            return ps.disk_usage(partition)
+        except Exception:
+            raise Exception("Falha inesperada ao fazer a leitura da partição especificada.")
