@@ -8,9 +8,19 @@ class MyJSON:
         self.configuration = configuration
 
     def write(self) -> None:
-        config = Config(self.configuration['server'].get(), self.configuration['port'].get(),
+        config = Config(self.configuration['server'].get(),
+                        self.configuration['port'].get(),
                         self.configuration['application_topic'].get(),
-                        self.configuration['service_topic'].get())
+                        self.configuration['service_topic_1'].get(),
+                        self.configuration['enable_topic_1'].get(),
+                        self.configuration['service_topic_2'].get(),
+                        self.configuration['enable_topic_2'].get(),
+                        self.configuration['service_topic_3'].get(),
+                        self.configuration['enable_topic_3'].get(),
+                        self.configuration['service_topic_4'].get(),
+                        self.configuration['enable_topic_4'].get(),
+                        self.configuration['service_topic_5'].get(),
+                        self.configuration['enable_topic_5'].get())
 
         try:
             with open(self.file, 'w') as f:
@@ -26,7 +36,16 @@ class MyJSON:
                 self.configuration['server'].set(config.server)
                 self.configuration['port'].set(config.port)
                 self.configuration['application_topic'].set(config.application_topic)
-                self.configuration['service_topic'].set(config.service_topic)
+                self.configuration['service_topic_1'].set(config.service_topic_1)
+                self.configuration['enable_topic_1'].set(config.enable_topic_1)
+                self.configuration['service_topic_2'].set(config.service_topic_2)
+                self.configuration['enable_topic_2'].set(config.enable_topic_2)
+                self.configuration['service_topic_3'].set(config.service_topic_3)
+                self.configuration['enable_topic_3'].set(config.enable_topic_3)
+                self.configuration['service_topic_4'].set(config.service_topic_4)
+                self.configuration['enable_topic_4'].set(config.enable_topic_4)
+                self.configuration['service_topic_5'].set(config.service_topic_5)
+                self.configuration['enable_topic_5'].set(config.enable_topic_5)
         except PermissionError:
             raise PermissionError("Sem permissão para abrir o arquivo de configuração.")
         except FileNotFoundError:

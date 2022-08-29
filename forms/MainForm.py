@@ -1,6 +1,5 @@
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
-from ttkbootstrap import utility
 from tkinter import messagebox
 from pathlib import Path
 from forms.SettingsForm import SettingsForm
@@ -16,11 +15,26 @@ class MainForm(ttk.Frame):
         self.pack(fill=BOTH, expand=YES)
         self.start = False
         self.client_mqtt = None
-        self.configuration = {
+        '''self.configuration = {
             'server': ttk.StringVar(),
             'port': ttk.StringVar(),
             'application_topic': ttk.StringVar(),
             'service_topic': ttk.StringVar(),
+        }'''
+        self.configuration = {
+            'server': ttk.StringVar(),
+            'port': ttk.StringVar(),
+            'application_topic': ttk.StringVar(),
+            'service_topic_1': ttk.StringVar(),
+            'enable_topic_1': ttk.IntVar(),
+            'service_topic_2': ttk.StringVar(),
+            'enable_topic_2': ttk.IntVar(),
+            'service_topic_3': ttk.StringVar(),
+            'enable_topic_3': ttk.IntVar(),
+            'service_topic_4': ttk.StringVar(),
+            'enable_topic_4': ttk.IntVar(),
+            'service_topic_5': ttk.StringVar(),
+            'enable_topic_5': ttk.IntVar(),
         }
         self.process = ttk.StringVar()
         self.path = ttk.StringVar()
@@ -31,6 +45,7 @@ class MainForm(ttk.Frame):
 
         self.button_action = None
         self.button_settings = None
+        self.button_browse = None
         self.combobox_process = None
         self.label_status_monitoring = None
         self.label_status_connection = None
@@ -112,8 +127,9 @@ class MainForm(ttk.Frame):
         path = ttk.Entry(frame, width=50, textvariable=self.path, state="disabled")
         path.grid(row=0, column=1, padx=2, sticky=ttk.W)
 
-        button = ttk.Button(frame, text="Selecionar Pasta", bootstyle=(INFO, OUTLINE), command=self.on_browse)
-        button.grid(row=0, column=2, padx=2)
+        self.button_browse = ttk.Button(frame, text="Selecionar Pasta", bootstyle=(INFO, OUTLINE),
+                                        command=self.on_browse)
+        self.button_browse.grid(row=0, column=2, padx=2)
 
     def create_memoria_frame(self):
         frame = ttk.Frame(self)
@@ -207,13 +223,13 @@ class MainForm(ttk.Frame):
         label = ttk.Label(frame, text=" Processo")
         label.grid(row=3, column=0, sticky=ttk.W)
 
-        self.label_status_process = ttk.Label(frame, text=" Não executando", font='Arial 8 bold', bootstyle="danger")
+        self.label_status_process = ttk.Label(frame, text=" -", font='Arial 8 bold', bootstyle="danger")
         self.label_status_process.grid(row=3, column=1, sticky=ttk.W)
 
         label = ttk.Label(frame, text=" Arquivos Pasta")
         label.grid(row=4, column=0, sticky=ttk.W)
 
-        self.label_status_path = ttk.Label(frame, text=" Falha", font='Arial 8 bold', bootstyle="danger")
+        self.label_status_path = ttk.Label(frame, text=" -", font='Arial 8 bold', bootstyle="danger")
         self.label_status_path.grid(row=4, column=1, sticky=ttk.W)
 
     def read_config(self) -> None:
@@ -229,7 +245,7 @@ class MainForm(ttk.Frame):
 
     def on_settings(self) -> None:
         if not self.start:
-            setting_form = ttk.Toplevel(self)
+            setting_form = ttk.Toplevel()
             setting_form.title("Configurações")
             setting_form.grab_set()
             setting_form.resizable(False, False)
@@ -253,6 +269,7 @@ class MainForm(ttk.Frame):
                     self.change_label_connection_to_connected(True)
                     self.change_state_action(True)
                     self.change_label_monitoring_to_running(True)
+                    self.change_button_brower_path(False)
                     self.after(0, self.loop)
                 except Exception as err:
                     self.change_state_action(False)
@@ -267,6 +284,7 @@ class MainForm(ttk.Frame):
             finally:
                 self.change_state_action(False)
                 self.change_label_monitoring_to_running(False)
+                self.change_button_brower_path(True)
 
     def loop(self):
         def mqtt_connection(cls):
@@ -278,55 +296,65 @@ class MainForm(ttk.Frame):
             except Exception:
                 cls.change_label_connection_to_connected(False)
 
-        try:
-            process_exist = MyPsutil.check_process_exist(self.process.get())
-        except Exception:
+        def mqtt_publish(cls, topic: str, value: str):
+            if cls.client_mqtt.connected:
+                cls.client_mqtt.publish(topic, value)
+            else:
+                mqtt_connection(cls)
+
+        if self.configuration["enable_topic_1"].get() == 1:
             process_exist = False
+            try:
+                process_exist = MyPsutil.check_process_exist(self.process.get())
+            except Exception:
+                process_exist = False
+            finally:
+                if process_exist:
+                    print("Sem alarme")
+                    self.change_label_process_to_executing(0)
+                    mqtt_publish(self, self.configuration["service_topic_1"].get(), '0')
+                else:
+                    print("Gera alarme")
+                    self.change_label_process_to_executing(1)
+                    mqtt_publish(self, self.configuration["service_topic_1"].get(), '1')
 
-        try:
-            file_size_ok = MyPsutil.check_files_size(self.path.get(), 10000)
-        except Exception:
+        if self.configuration["enable_topic_2"].get() == 1:
             file_size_ok = False
+            try:
+                file_size_ok = MyPsutil.check_files_size(self.path.get(), 10000)
+            except Exception:
+                file_size_ok = False
+            finally:
+                if file_size_ok:
+                    self.change_label_path_to_ok(0)
+                    mqtt_publish(self, self.configuration["service_topic_2"].get(), '0')
+                else:
+                    self.change_label_path_to_ok(1)
+                    mqtt_publish(self, self.configuration["service_topic_2"].get(), '1')
 
-        try:
-            memory = MyPsutil.show_virtual_memory()
-            self.memory_meter.configure(amountused=memory.percent)
-        except Exception:
-            pass
+        if self.configuration["enable_topic_3"].get() == 1:
+            try:
+                memory = MyPsutil.show_virtual_memory()
+                self.memory_meter.configure(amountused=memory.percent)
+                mqtt_publish(self, self.configuration["service_topic_3"].get(), str(memory.percent))
+            except Exception:
+                pass
 
-        try:
-            cpu = MyPsutil.show_cpu_percent()
-            self.cpu_meter.configure(amountused=cpu)
-        except Exception:
-            pass
+        if self.configuration["enable_topic_4"].get() == 1:
+            try:
+                cpu = MyPsutil.show_cpu_percent()
+                self.cpu_meter.configure(amountused=cpu)
+                mqtt_publish(self, self.configuration["service_topic_4"].get(), str(cpu))
+            except Exception:
+                pass
 
-        try:
-            disk = MyPsutil.show_disk_usage("c:")
-            self.disk_meter.configure(amountused=disk.percent)
-        except Exception:
-            pass
-
-        if process_exist:
-            print("Sem alarme")
-            self.change_label_process_to_executing(True)
-
-            if self.client_mqtt.connected:
-                self.client_mqtt.publish(self.configuration["service_topic"].get(), '0')
-            else:
-                mqtt_connection(self)
-        else:
-            print("Gera alarme")
-            self.change_label_process_to_executing(False)
-
-            if self.client_mqtt.connected:
-                self.client_mqtt.publish(self.configuration["service_topic"].get(), '1')
-            else:
-                mqtt_connection(self)
-
-        if file_size_ok:
-            self.change_label_path_to_ok(True)
-        else:
-            self.change_label_path_to_ok(False)
+        if self.configuration["enable_topic_5"].get() == 1:
+            try:
+                disk = MyPsutil.show_disk_usage("c:")
+                self.disk_meter.configure(amountused=disk.percent)
+                mqtt_publish(self, self.configuration["service_topic_5"].get(), str(disk.percent))
+            except Exception:
+                pass
 
         self.afterid.set(self.after(5000, self.loop))
 
@@ -337,6 +365,12 @@ class MainForm(ttk.Frame):
         else:
             self.button_action['image'] = 'stop'
             self.button_action['text'] = 'Parar'
+
+    def change_button_brower_path(self, value):
+        if value:
+            self.button_browse["state"] = "normal"
+        else:
+            self.button_browse["state"] = "disabled"
 
     def change_label_monitoring_to_running(self, value: bool) -> None:
         if value:
@@ -354,21 +388,27 @@ class MainForm(ttk.Frame):
             self.label_status_connection["bootstyle"] = "danger"
             self.label_status_connection["text"] = " Desconectado"
 
-    def change_label_process_to_executing(self, value: bool) -> None:
-        if value:
+    def change_label_process_to_executing(self, value: int) -> None:
+        if value == 0:
             self.label_status_process["bootstyle"] = "success"
             self.label_status_process["text"] = " Executando"
-        else:
+        elif value == 1:
             self.label_status_process["bootstyle"] = "danger"
             self.label_status_process["text"] = " Não executando"
+        else:
+            self.label_status_process["bootstyle"] = "danger"
+            self.label_status_process["text"] = " -"
 
-    def change_label_path_to_ok(self, value: bool) -> None:
-        if value:
+    def change_label_path_to_ok(self, value: int) -> None:
+        if value == 0:
             self.label_status_path["bootstyle"] = "success"
             self.label_status_path["text"] = " Ok"
-        else:
+        elif value == 1:
             self.label_status_path["bootstyle"] = "danger"
             self.label_status_path["text"] = " Falha"
+        else:
+            self.label_status_path["bootstyle"] = "danger"
+            self.label_status_path["text"] = " -"
 
     def validate(self) -> bool:
         if not self.validate_configuration():
@@ -392,32 +432,29 @@ class MainForm(ttk.Frame):
             return False
         elif self.configuration["application_topic"].get() == "":
             return False
-        elif self.configuration["service_topic"].get() == "":
-            return False
         return True
 
     def validate_combobox_process(self) -> bool:
-        if self.process.get() == "" or self.process.get() is None:
+        if self.configuration["enable_topic_1"].get() == 1 and (self.process.get() == "" or self.process.get() is None):
             return False
         return True
 
     def validate_entry_path(self) -> bool:
-        if self.path.get() == "" or self.path.get() is None:
+        if self.configuration["enable_topic_2"].get() == 1 and (self.path.get() == "" or self.path.get() is None):
             return False
         return True
 
     def change_state_action(self, value: bool) -> None:
         if value:
-            self.combobox_process["state"] = "disabled"
+            self.combobox_process.config(state="disabled")
             self.change_button_action_to_start(False)
-            # self.change_label_process_to_executing(False)
-            # self.change_label_path_to_ok(False)
+            self.check_config_service_is_enabled()
             self.start = True
         else:
-            self.combobox_process["state"] = "normal"
+            self.combobox_process.config(state="normal")
             self.change_button_action_to_start(True)
-            self.change_label_process_to_executing(False)
-            self.change_label_path_to_ok(False)
+            self.change_label_process_to_executing(2)
+            self.change_label_path_to_ok(2)
             self.reset_meters()
             self.start = False
 
@@ -425,4 +462,24 @@ class MainForm(ttk.Frame):
         self.memory_meter.configure(amountused=0)
         self.cpu_meter.configure(amountused=0)
         self.disk_meter.configure(amountused=0)
+
+        self.memory_meter["bootstyle"] = "primary"
+        self.cpu_meter["bootstyle"] = "primary"
+        self.disk_meter["bootstyle"] = "primary"
+
+    def check_config_service_is_enabled(self):
+        if self.configuration["enable_topic_1"].get() == 0:
+            self.change_label_process_to_executing(2)
+
+        if self.configuration["enable_topic_2"].get() == 0:
+            self.change_label_path_to_ok(2)
+
+        if self.configuration["enable_topic_3"].get() == 0:
+            self.memory_meter["bootstyle"] = "secondary"
+
+        if self.configuration["enable_topic_4"].get() == 0:
+            self.cpu_meter["bootstyle"] = "secondary"
+
+        if self.configuration["enable_topic_5"].get() == 0:
+            self.disk_meter["bootstyle"] = "secondary"
 
