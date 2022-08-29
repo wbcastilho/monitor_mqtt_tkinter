@@ -15,12 +15,6 @@ class MainForm(ttk.Frame):
         self.pack(fill=BOTH, expand=YES)
         self.start = False
         self.client_mqtt = None
-        '''self.configuration = {
-            'server': ttk.StringVar(),
-            'port': ttk.StringVar(),
-            'application_topic': ttk.StringVar(),
-            'service_topic': ttk.StringVar(),
-        }'''
         self.configuration = {
             'server': ttk.StringVar(),
             'port': ttk.StringVar(),
