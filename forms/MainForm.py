@@ -405,36 +405,36 @@ class MainForm(ttk.Frame):
             self.label_status_path["text"] = " -"
 
     def validate(self) -> bool:
-        if not self.validate_configuration():
+        def validate_configuration(cls) -> bool:
+            if cls.configuration["server"].get() == "":
+                return False
+            elif cls.configuration["port"].get() == "":
+                return False
+            elif cls.configuration["application_topic"].get() == "":
+                return False
+            return True
+
+        def validate_combobox_process(cls) -> bool:
+            if cls.configuration["enable_topic_1"].get() == 1 and (
+                    cls.process.get() == "" or cls.process.get() is None):
+                return False
+            return True
+
+        def validate_entry_path(cls) -> bool:
+            if cls.configuration["enable_topic_2"].get() == 1 and (cls.path.get() == "" or cls.path.get() is None):
+                return False
+            return True
+
+        if not validate_configuration(self):
             messagebox.showwarning(title="Atenção", message="Há alguns campos das configurações que não foram "
                                                             "preenchidos, clique no botão configurações antes "
                                                             "de iniciar.")
             return False
-        elif not self.validate_combobox_process():
+        elif not validate_combobox_process(self):
             messagebox.showwarning(title="Atenção", message="Um processo deve ser selecionado.")
             return False
-        elif not self.validate_entry_path():
+        elif not validate_entry_path(self):
             messagebox.showwarning(title="Atenção", message="Uma pasta deve ser selecionada.")
-            return False
-
-        return True
-
-    def validate_configuration(self) -> bool:
-        if self.configuration["server"].get() == "":
-            return False
-        elif self.configuration["port"].get() == "":
-            return False
-        elif self.configuration["application_topic"].get() == "":
-            return False
-        return True
-
-    def validate_combobox_process(self) -> bool:
-        if self.configuration["enable_topic_1"].get() == 1 and (self.process.get() == "" or self.process.get() is None):
-            return False
-        return True
-
-    def validate_entry_path(self) -> bool:
-        if self.configuration["enable_topic_2"].get() == 1 and (self.path.get() == "" or self.path.get() is None):
             return False
         return True
 
