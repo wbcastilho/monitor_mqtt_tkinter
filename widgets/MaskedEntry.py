@@ -1,35 +1,23 @@
 class MaskedEntry:
-    # def __init__(self):
-    # self.count_point = 0
-    # self.count_number = 0
-
     @staticmethod
-    def mask_number(value) -> bool:
-        if value.isdigit():
-            return True
-        elif value == "":
-            return True
-        else:
+    def limit_max_length(value, type_action, max_length):
+        if int(type_action) == 1:
+            if len(value) <= max_length:
+                return True
             return False
+        return True
 
-    @staticmethod
-    def mask_ip(self, value, type_action):
-        if value.isdigit():
-            '''if int(type_action) == 1:
-                if self.count_number < 3:
-                    self.count_number += 1
-                    return True
-                else:
-                    return False'''
+    def mask_number(self, char, value, type_action, max_length) -> bool:
+        if char.isdigit():
+            return self.limit_max_length(value, type_action, int(max_length))
+        elif char == "":
             return True
-        elif value == ".":
-            '''if int(type_action) == 1:
-                if self.count_point < 3:
-                    self.count_point += 1
-                    self.count_number = 0
-                    return True
-                else:
-                    return False'''
+        return False
+
+    def mask_ip(self, char, value, type_action, max_length):
+        if char.isdigit() or char == ".":
+            return self.limit_max_length(value, type_action, int(max_length))
+        elif char == "":
             return True
         else:
             return False

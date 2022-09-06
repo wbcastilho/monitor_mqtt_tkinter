@@ -3,7 +3,6 @@ from ttkbootstrap.constants import *
 from tkinter import messagebox
 from adapters.MyJSON import MyJSON
 from widgets.MaskedEntry import MaskedEntry
-from widgets.MaskedInt import MaskedInt
 from helpers.Validator import Validator
 
 
@@ -34,11 +33,9 @@ class SettingsForm(ttk.Frame):
         self.button_save = None
         self.button_cancel = None
 
-        masked_int = MaskedInt()
-        self.digit_func = self.register(masked_int.mask_number)
-
         masked_entry = MaskedEntry()
-        self.vcmd = self.register(masked_entry.mask_ip)
+        self.digit_func = self.register(masked_entry.mask_number)
+        self.ip_func = self.register(masked_entry.mask_ip)
 
         self.init_configuration()
         self.create_form_config()
@@ -64,7 +61,7 @@ class SettingsForm(ttk.Frame):
                                       justify="center",
                                       width=30,
                                       validate="key",
-                                      validatecommand=(self.vcmd, '%S')
+                                      validatecommand=(self.ip_func, '%S', '%P', '%d', '15')
                                       )
         self.entry_server.grid(row=0, column=1, padx=2, sticky=ttk.W, pady=5)
 
@@ -76,7 +73,7 @@ class SettingsForm(ttk.Frame):
                                     justify="center",
                                     width=10,
                                     validate="key",
-                                    validatecommand=(self.digit_func, '%S', '%d')
+                                    validatecommand=(self.digit_func, '%S', '%P', '%d', '4')
                                     )
         self.entry_port.grid(row=1, column=1, padx=2, sticky=ttk.W, pady=5)
 
@@ -225,35 +222,43 @@ class SettingsForm(ttk.Frame):
     def on_cancel(self) -> None:
         self.master.destroy()
 
-    def validate(self):
-        if not self.validate_empty():
-            messagebox.showwarning(title="Erro", message="Todos os campos devem ser preenchidos.")
+    def validate(self) -> bool:
+        def validate_empty(cls) -> bool:
+            if cls.local_configuration["server"].get() == "":
+                messagebox.showwarning(title="Erro", message="O campo server deve ser preenchido.")
+                return False
+            elif cls.local_configuration["port"].get() == "":
+                messagebox.showwarning(title="Erro", message="O campo porta deve ser preenchido.")
+                return False
+            elif cls.local_configuration["application_topic"].get() == "":
+                messagebox.showwarning(title="Erro", message="O tópico da aplicação deve ser preenchido.")
+                return False
+            elif cls.local_configuration["enable_topic_1"].get() == 1 and \
+                    cls.local_configuration["service_topic_1"].get() == "":
+                messagebox.showwarning(title="Erro", message="Em monitoração de processo o tópico deve ser preenchido.")
+                return False
+            elif cls.local_configuration["enable_topic_2"].get() == 1 and \
+                    cls.local_configuration["service_topic_2"].get() == "":
+                messagebox.showwarning(title="Erro", message="Em monitoração de arquivos pasta o tópico deve ser "
+                                                             "preenchido.")
+                return False
+            elif cls.local_configuration["enable_topic_3"].get() == 1 and \
+                    cls.local_configuration["service_topic_3"].get() == "":
+                messagebox.showwarning(title="Erro", message="Em monitoração de memória o tópico deve ser preenchido.")
+                return False
+            elif cls.local_configuration["enable_topic_4"].get() == 1 and \
+                    cls.local_configuration["service_topic_4"].get() == "":
+                messagebox.showwarning(title="Erro", message="Em monitoração da cpu o tópico deve ser preenchido.")
+                return False
+            elif cls.local_configuration["enable_topic_5"].get() == 1 and \
+                    cls.local_configuration["service_topic_5"].get() == "":
+                messagebox.showwarning(title="Erro", message="Em monitoração de memória o tópico deve ser preenchido.")
+                return False
+            return True
+
+        if not validate_empty(self):
             return False
         elif not Validator.validate_ip(self.local_configuration["server"].get()):
             messagebox.showwarning(title="Erro", message="Ip informado inválido no campo Server.")
-            return False
-        return True
-
-    def validate_empty(self) -> bool:
-        if self.local_configuration["server"].get() == "":
-            return False
-        elif self.local_configuration["port"].get() == "":
-            return False
-        elif self.local_configuration["application_topic"].get() == "":
-            return False
-        elif self.local_configuration["enable_topic_1"].get() == 1 and \
-                self.local_configuration["service_topic_1"].get() == "":
-            return False
-        elif self.local_configuration["enable_topic_2"].get() == 1 and \
-                self.local_configuration["service_topic_2"].get() == "":
-            return False
-        elif self.local_configuration["enable_topic_3"].get() == 1 and \
-                self.local_configuration["service_topic_3"].get() == "":
-            return False
-        elif self.local_configuration["enable_topic_4"].get() == 1 and \
-                self.local_configuration["service_topic_4"].get() == "":
-            return False
-        elif self.local_configuration["enable_topic_5"].get() == 1 and \
-                self.local_configuration["service_topic_5"].get() == "":
             return False
         return True
